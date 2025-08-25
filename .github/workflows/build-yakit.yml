@@ -44,11 +44,13 @@ jobs:
                     Write-Host "File already exists, skipping download."
                 } else {
                     # 使用 wget 下载文件
-                    wget $downloadUrl -O "bins/scripts/google-chrome-plugin.zip" || {
+                    $result = wget $downloadUrl -O "bins/scripts/google-chrome-plugin.zip"
+                    if ($?) {
+                        Write-Host "Extension downloaded successfully!"
+                    } else {
                         Write-Host "Failed to download the extension!" -ForegroundColor Red
                         exit 1
                     }
-                    Write-Host "Extension downloaded successfully!"
                 }
               shell: powershell
 
