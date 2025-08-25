@@ -1,0 +1,92 @@
+name: Build Windows Platform Only
+
+on:
+    workflow_dispatch:  # 手动触发构建，替代 push 事件
+
+jobs:
+    build_yakit:
+        runs-on: windows-latest  # 仅在 Windows 环境下构建
+        env:
+            CI: ""
+            NODE_OPTIONS: --max_old_space_size=4096
+
+        steps:
+            - uses: actions/checkout@v4  # 检出代码
+            - uses: actions/setup-node@v4  # 设置 Node.js 环境
+              with:
+                  node-version: 18.18.2  # 使用 Node.js 版本 18.18.2
+
+            - run: echo ${{ github.ref_name }}  # 打印当前标签名称
+
+            # 适配 Windows 环境，使用 PowerShell 代替 Linux 的 zip 命令
+            - run: |
+                Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+                $zipTool = "C:\Program Files\7-Zip\7z.exe"
+                if (-Not (Test-Path $zipTool)) {
+                    Write-Host "7-Zip is not installed. Installing 7-Zip..."
+                    choco install 7zip
+                }
+                $zipTool
+            - run: echo "7-Zip installed successfully"
+
+            # 下载 Yakit Chrome 扩展
+            - name: "Download yakit-chrome-extension"
+              run: |
+                  $extensionVersion = Invoke-RestMethod -Uri "http://yaklang.oss-accelerate.aliyuncs.com/chrome-extension/latest-version.txt"
+                  if (-not $extensionVersion) {
+                      Write-Host "Failed to download!" -ForegroundColor Red
+                      exit 1
+                  }
+                  Write-Host "Extension version: $extensionVersion"
+                  Invoke-WebRequest -Uri "https://yaklang.oss-accelerate.aliyuncs.com/chrome-extension/yakit-chrome-extension-v$extensionVersion.zip" -OutFile "bins/scripts/google-chrome-plugin.zip"
+              shell: powershell
+
+            # 安装 MakeSelf 工具
+            - name: "Download MakeSelf"
+              run: choco install makeself  # 使用 Chocolatey 安装 MakeSelf 工具
+              shell: powershell
+
+            # 获取最新的引擎版本并设置为环境变量
+            - name: "Fetch Latest Engine Version And Set To Env"
+              run: |
+                  Invoke-WebRequest -Uri "https://yaklang.oss-accelerate.aliyuncs.com/yak/latest/version.txt" -OutFile "bins/engine-version.txt"
+                  $engineVersion = Get-Content "bins/engine-version.txt" | Out-String | Trim
+                  Write-Host "Engine Version: $engineVersion"
+                  echo "ENGINE_VERSION=$engineVersion" >> $GITHUB_ENV
+              shell: powershell
+
+            # 下载 Windows 引擎
+            - name: "Download Yak Engine for Windows"
+              run: |
+                  Invoke-WebRequest -Uri "https://yaklang.oss-accelerate.aliyuncs.com/yak/${{ env.ENGINE_VERSION }}/yak_windows_amd64.exe" -OutFile "bins/yak_windows_amd64.exe"
+                  Compress-Archive -Path "bins/yak_windows_amd64.exe" -DestinationPath "bins/yak_windows_amd64.zip"
+                  Remove-Item "bins/yak_windows_amd64.exe"
+              shell: powershell
+
+            # 构建 Windows 平台的 Yakit
+            - name: "Build Windows Yakit Normal And Legacy"
+              env:
+                  GH_TOKEN: ${{ secrets.GH_TOKEN }}
+              working-directory: ./ 
+              run: ./packageScript/script/electron-builder.sh ce || { exit 1; }
+              shell: bash
+
+            # 查看构建的内容
+            - name: View Published Content
+              run: |
+                  ls ./release
+
+            # 校验 Windows 构建包
+            - name: Check Yakit if the output is correct
+              run: (./packageScript/script/check-build-package.sh Yakit) || { exit 1; }
+              shell: bash
+
+            # 上传 Windows 构建产物
+            - name: Upload Yakit Windows Artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: Yakit-windows-artifacts
+                  path: |
+                      ./release/Yakit-${{ env.ENV_TAG }}-*.exe
+                  if-no-files-found: error
+                  retention-days: 1
