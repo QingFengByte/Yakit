@@ -30,13 +30,12 @@ jobs:
                 # 写死的扩展版本和下载链接
                 $downloadUrl = "https://yaklang.oss-accelerate.aliyuncs.com/chrome-extension/yakit-chrome-extension-v0.0.7.zip"
                 Write-Host "Downloading extension from: $downloadUrl"
-
                 # 检查文件是否已存在
                 if (Test-Path "bins/scripts/google-chrome-plugin.zip") {
                     Write-Host "File already exists, skipping download."
                 } else {
-                    # 使用 wget 下载文件
-                    $result = wget $downloadUrl -O "bins/scripts/google-chrome-plugin.zip"
+                    # 使用 curl 下载文件
+                    Invoke-WebRequest -Uri $downloadUrl -OutFile "bins/scripts/google-chrome-plugin.zip"
                     if ($?) {
                         Write-Host "Extension downloaded successfully!"
                     } else {
@@ -44,11 +43,6 @@ jobs:
                         exit 1
                     }
                 }
-              shell: powershell
-
-            # 安装 MakeSelf 工具
-            - name: "Download MakeSelf"
-              run: choco install makeself  # 使用 Chocolatey 安装 MakeSelf 工具
               shell: powershell
 
             # 获取最新的引擎版本并设置为环境变量
@@ -72,7 +66,8 @@ jobs:
                 $outputFile = "bins/yak_windows_amd64.exe"
                 if (-Not (Test-Path $outputFile)) {
                     Invoke-WebRequest -Uri $engineUrl -OutFile $outputFile
-                    Compress-Archive -Path $outputFile -DestinationPath "bins/yak_windows_amd64.zip"
+                    # 使用 7-Zip 压缩文件
+                    7z a -tzip "bins/yak_windows_amd64.zip" $outputFile
                     Remove-Item $outputFile
                     Write-Host "Yak Engine for Windows downloaded and zipped!"
                 } else {
