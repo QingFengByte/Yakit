@@ -24,19 +24,11 @@ jobs:
                 choco install wget -y  # 使用 Chocolatey 安装 wget
               shell: powershell
 
-            # 下载 Yakit Chrome 扩展
+            # 下载 Yakit Chrome 扩展（使用写死的 URL）
             - name: "Download yakit-chrome-extension"
               run: |
-                # 获取当前扩展版本
-                $extensionVersion = Invoke-RestMethod -Uri "http://yaklang.oss-accelerate.aliyuncs.com/chrome-extension/latest-version.txt"
-                if (-not $extensionVersion) {
-                    Write-Host "Failed to download the extension version!" -ForegroundColor Red
-                    exit 1
-                }
-                Write-Host "Extension version: $extensionVersion"
-
-                # 构建下载链接
-                $downloadUrl = "https://yaklang.oss-accelerate.aliyuncs.com/chrome-extension/yakit-chrome-extension-v$extensionVersion.zip"
+                # 写死的扩展版本和下载链接
+                $downloadUrl = "https://yaklang.oss-accelerate.aliyuncs.com/chrome-extension/yakit-chrome-extension-v0.0.7.zip"
                 Write-Host "Downloading extension from: $downloadUrl"
 
                 # 检查文件是否已存在
@@ -73,10 +65,10 @@ jobs:
                 echo "ENGINE_VERSION=$engineVersion" >> $GITHUB_ENV
               shell: powershell
 
-            # 下载 Windows 引擎
+            # 下载 Windows 引擎（使用固定的引擎版本）
             - name: "Download Yak Engine for Windows"
               run: |
-                $engineUrl = "https://yaklang.oss-accelerate.aliyuncs.com/yak/${{ env.ENGINE_VERSION }}/yak_windows_amd64.exe"
+                $engineUrl = "https://yaklang.oss-accelerate.aliyuncs.com/yak/1.4.3-beta8/yak_windows_amd64.exe"  # 使用固定版本的引擎 URL
                 $outputFile = "bins/yak_windows_amd64.exe"
                 if (-Not (Test-Path $outputFile)) {
                     Invoke-WebRequest -Uri $engineUrl -OutFile $outputFile
@@ -100,7 +92,6 @@ jobs:
             - name: View Published Content
               run: |
                   ls ./release
-
             # 校验 Windows 构建包
             - name: Check Yakit if the output is correct
               run: (./packageScript/script/check-build-package.sh Yakit) || { exit 1; }
