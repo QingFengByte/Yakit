@@ -32,14 +32,21 @@ jobs:
             # 下载 Yakit Chrome 扩展
             - name: "Download yakit-chrome-extension"
               run: |
-                  $extensionVersion = Invoke-RestMethod -Uri "http://yaklang.oss-accelerate.aliyuncs.com/chrome-extension/latest-version.txt"
-                  if (-not $extensionVersion) {
-                      Write-Host "Failed to download!" -ForegroundColor Red
-                      exit 1
-                  }
-                  Write-Host "Extension version: $extensionVersion"
-                  Invoke-WebRequest -Uri "https://yaklang.oss-accelerate.aliyuncs.com/chrome-extension/yakit-chrome-extension-v$extensionVersion.zip" -OutFile "bins/scripts/google-chrome-plugin.zip"
+                $extensionVersion = Invoke-RestMethod -Uri "http://yaklang.oss-accelerate.aliyuncs.com/chrome-extension/latest-version.txt"
+                if (-not $extensionVersion) {
+                    Write-Host "Failed to download!" -ForegroundColor Red
+                    exit 1
+                }
+                Write-Host "Extension version: $extensionVersion"
+            
+                # 构建下载链接
+                $downloadUrl = "https://yaklang.oss-accelerate.aliyuncs.com/chrome-extension/yakit-chrome-extension-v$extensionVersion.zip"
+                Write-Host "Downloading extension from: $downloadUrl"
+            
+                # 使用 curl 进行下载
+                curl -L $downloadUrl -o "bins/scripts/google-chrome-plugin.zip"
               shell: powershell
+
 
             # 安装 MakeSelf 工具
             - name: "Download MakeSelf"
