@@ -46,18 +46,19 @@ jobs:
               shell: powershell
 
             # 获取最新的引擎版本并设置为环境变量
-            - name: "Fetch Latest Engine Version And Set To Env"
-              run: |
-                $engineVersionUrl = "https://yaklang.oss-accelerate.aliyuncs.com/yak/latest/version.txt"
-                $engineVersionFile = "bins/engine-version.txt"
-                # 如果文件已存在，则跳过下载
-                if (-Not (Test-Path $engineVersionFile)) {
-                    Invoke-WebRequest -Uri $engineVersionUrl -OutFile $engineVersionFile
-                }
-                $engineVersion = Get-Content $engineVersionFile | Out-String | Trim
-                Write-Host "Engine Version: $engineVersion"
-                echo "ENGINE_VERSION=$engineVersion" >> $GITHUB_ENV
-              shell: powershell
+            # - name: "Fetch Latest Engine Version And Set To Env"
+            #   run: |
+            #     $engineVersionUrl = "https://yaklang.oss-accelerate.aliyuncs.com/yak/latest/version.txt"
+            #     $engineVersionFile = "bins/engine-version.txt"
+            #     # 如果文件已存在，则跳过下载
+            #     if (-Not (Test-Path $engineVersionFile)) {
+            #         Invoke-WebRequest -Uri $engineVersionUrl -OutFile $engineVersionFile
+            #     }
+            #     $engineVersion = (Get-Content $engineVersionFile | Out-String).Trim()  # 使用 Trim() 方法
+            #     Write-Host "Engine Version: $engineVersion"
+            #     echo "ENGINE_VERSION=$engineVersion" >> $GITHUB_ENV
+            #   shell: powershell
+
 
             # 下载 Windows 引擎（使用固定的引擎版本）
             - name: "Download Yak Engine for Windows"
