@@ -32,21 +32,30 @@ jobs:
             # 下载 Yakit Chrome 扩展
             - name: "Download yakit-chrome-extension"
               run: |
+                # 获取当前扩展版本
                 $extensionVersion = Invoke-RestMethod -Uri "http://yaklang.oss-accelerate.aliyuncs.com/chrome-extension/latest-version.txt"
                 if (-not $extensionVersion) {
-                    Write-Host "Failed to download!" -ForegroundColor Red
+                    Write-Host "Failed to download the extension version!" -ForegroundColor Red
                     exit 1
                 }
                 Write-Host "Extension version: $extensionVersion"
-            
+
                 # 构建下载链接
                 $downloadUrl = "https://yaklang.oss-accelerate.aliyuncs.com/chrome-extension/yakit-chrome-extension-v$extensionVersion.zip"
                 Write-Host "Downloading extension from: $downloadUrl"
-            
-                # 使用 curl 进行下载
-                curl -L $downloadUrl -o "bins/scripts/google-chrome-plugin.zip"
-              shell: powershell
 
+                # 检查文件是否已存在
+                if (Test-Path "bins/scripts/google-chrome-plugin.zip") {
+                    Write-Host "File already exists, skipping download."
+                } else {
+                    # 使用 curl 下载文件，确保路径正确
+                    & "C:\Program Files\Git\usr\bin\curl.exe" -f -L $downloadUrl -o "bins/scripts/google-chrome-plugin.zip" || {
+                        Write-Host "Failed to download the extension!" -ForegroundColor Red
+                        exit 1
+                    }
+                    Write-Host "Extension downloaded successfully!"
+                }
+              shell: powershell
 
             # 安装 MakeSelf 工具
             - name: "Download MakeSelf"
@@ -56,18 +65,30 @@ jobs:
             # 获取最新的引擎版本并设置为环境变量
             - name: "Fetch Latest Engine Version And Set To Env"
               run: |
-                  Invoke-WebRequest -Uri "https://yaklang.oss-accelerate.aliyuncs.com/yak/latest/version.txt" -OutFile "bins/engine-version.txt"
-                  $engineVersion = Get-Content "bins/engine-version.txt" | Out-String | Trim
-                  Write-Host "Engine Version: $engineVersion"
-                  echo "ENGINE_VERSION=$engineVersion" >> $GITHUB_ENV
+                $engineVersionUrl = "https://yaklang.oss-accelerate.aliyuncs.com/yak/latest/version.txt"
+                $engineVersionFile = "bins/engine-version.txt"
+                # 如果文件已存在，则跳过下载
+                if (-Not (Test-Path $engineVersionFile)) {
+                    Invoke-WebRequest -Uri $engineVersionUrl -OutFile $engineVersionFile
+                }
+                $engineVersion = Get-Content $engineVersionFile | Out-String | Trim
+                Write-Host "Engine Version: $engineVersion"
+                echo "ENGINE_VERSION=$engineVersion" >> $GITHUB_ENV
               shell: powershell
 
             # 下载 Windows 引擎
             - name: "Download Yak Engine for Windows"
               run: |
-                  Invoke-WebRequest -Uri "https://yaklang.oss-accelerate.aliyuncs.com/yak/${{ env.ENGINE_VERSION }}/yak_windows_amd64.exe" -OutFile "bins/yak_windows_amd64.exe"
-                  Compress-Archive -Path "bins/yak_windows_amd64.exe" -DestinationPath "bins/yak_windows_amd64.zip"
-                  Remove-Item "bins/yak_windows_amd64.exe"
+                $engineUrl = "https://yaklang.oss-accelerate.aliyuncs.com/yak/${{ env.ENGINE_VERSION }}/yak_windows_amd64.exe"
+                $outputFile = "bins/yak_windows_amd64.exe"
+                if (-Not (Test-Path $outputFile)) {
+                    Invoke-WebRequest -Uri $engineUrl -OutFile $outputFile
+                    Compress-Archive -Path $outputFile -DestinationPath "bins/yak_windows_amd64.zip"
+                    Remove-Item $outputFile
+                    Write-Host "Yak Engine for Windows downloaded and zipped!"
+                } else {
+                    Write-Host "Yak Engine for Windows already exists, skipping download."
+                }
               shell: powershell
 
             # 构建 Windows 平台的 Yakit
