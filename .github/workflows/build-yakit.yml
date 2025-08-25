@@ -49,7 +49,8 @@ jobs:
                     Write-Host "File already exists, skipping download."
                 } else {
                     # 使用 curl 下载文件，确保路径正确
-                    & "C:\Program Files\Git\usr\bin\curl.exe" -f -L $downloadUrl -o "bins/scripts/google-chrome-plugin.zip" || {
+                    $curlResult = & "C:\Program Files\Git\usr\bin\curl.exe" -f -L $downloadUrl -o "bins/scripts/google-chrome-plugin.zip"
+                    if (-not $?) {
                         Write-Host "Failed to download the extension!" -ForegroundColor Red
                         exit 1
                     }
