@@ -18,16 +18,11 @@ jobs:
 
             - run: echo ${{ github.ref_name }}  # 打印当前标签名称
 
-            # 适配 Windows 环境，使用 PowerShell 代替 Linux 的 zip 命令
-            - run: |
-                Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-                $zipTool = "C:\Program Files\7-Zip\7z.exe"
-                if (-Not (Test-Path $zipTool)) {
-                    Write-Host "7-Zip is not installed. Installing 7-Zip..."
-                    choco install 7zip
-                }
-                $zipTool
-            - run: echo "7-Zip installed successfully"
+            # 安装 wget 下载工具
+            - name: Install wget tool
+              run: |
+                choco install wget -y  # 使用 Chocolatey 安装 wget
+              shell: powershell
 
             # 下载 Yakit Chrome 扩展
             - name: "Download yakit-chrome-extension"
@@ -48,9 +43,8 @@ jobs:
                 if (Test-Path "bins/scripts/google-chrome-plugin.zip") {
                     Write-Host "File already exists, skipping download."
                 } else {
-                    # 使用 curl 下载文件，确保路径正确
-                    $curlResult = & "C:\Program Files\Git\usr\bin\curl.exe" -f -L $downloadUrl -o "bins/scripts/google-chrome-plugin.zip"
-                    if (-not $?) {
+                    # 使用 wget 下载文件
+                    wget $downloadUrl -O "bins/scripts/google-chrome-plugin.zip" || {
                         Write-Host "Failed to download the extension!" -ForegroundColor Red
                         exit 1
                     }
